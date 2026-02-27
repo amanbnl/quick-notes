@@ -11,8 +11,6 @@ export default function ProfilePage() {
 
   const tabs = [
     { id: 'identity', label: 'Identity', icon: User, desc: 'Personal info' },
-    { id: 'experience', label: 'Experience', icon: Briefcase, desc: 'Work history' },
-    { id: 'education', label: 'Education', icon: GraduationCap, desc: 'Background' },
     { id: 'skills', label: 'Languages', icon: Languages, desc: 'Communication' },
     { id: 'security', label: 'Security', icon: ShieldAlert, desc: 'Danger Zone' },
   ];

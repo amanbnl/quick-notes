@@ -21,9 +21,7 @@ export default function Editor() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto group">
-
-
+    <div className=" group">
       <div className="relative animate-in fade-in slide-in-from-bottom-4 duration-1000">
         <ReactQuill 
           theme="snow" 
