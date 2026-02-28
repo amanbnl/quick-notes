@@ -7,13 +7,14 @@ import {
 import { cn } from '@/utils/cn';
 import Editor from '@/components/Editor';
 import ShareModal from '@/components/modals/ShareModal';
+import { useRouter } from 'next/navigation';
 
 export default function NoteEditorPage() {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [openShareModal, setOpenShareModal] = useState(false);
   const [noteTitle, setNoteTitle] = useState("Product Roadmap Q1");
   const [isSaving, setIsSaving] = useState(false);
-
+const router = useRouter();
   // Mock auto-save effect
   useEffect(() => {
     const timer = setTimeout(() => setIsSaving(false), 1000);
@@ -31,7 +32,7 @@ export default function NoteEditorPage() {
       )}>
         <div className="flex items-center justify-between px-4 py-3 mb-4">
           <div className="flex items-center gap-3">
-            <ChevronLeft className="text-zinc-400 cursor-pointer hover:text-indigo-600 transition-colors" size={20} />
+            <ChevronLeft onClick={() => router.back()} className="text-zinc-400 cursor-pointer hover:text-indigo-600 transition-colors" size={20} />
             <h2 className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">Strategy</h2>
           </div>
           <button onClick={() => setSidebarOpen(false)} className="lg:hidden p-2 text-zinc-400 hover:bg-zinc-100 rounded-xl">
