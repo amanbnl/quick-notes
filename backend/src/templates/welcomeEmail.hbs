@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    /* Desktop-first fallback for non-Tailwind environments */
+    .btn-gradient {
+      background: linear-gradient(90deg, #4F46E5 0%, #7C3AED 100%);
+    }
+    @media only screen and (max-width: 600px) {
+      .container { width: 100% !important; padding: 20px !important; }
+    }
+  </style>
+</head>
+<body style="margin: 0; padding: 0; background-color: #F9FAFB; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+  <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #F9FAFB;">
+    <tr>
+      <td align="center" style="padding: 40px 0;">
+        <table class="container" width="600" border="0" cellspacing="0" cellpadding="0" style="background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);">
+          
+          <tr>
+            <td align="center" style="background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%); padding: 60px 40px;">
+              <h1 style="color: #ffffff; margin: 0; font-size: 32px; font-weight: 800; letter-spacing: -0.025em;">Welcome to iNotes</h1>
+              <p style="color: #E0E7FF; font-size: 16px; margin-top: 12px; font-weight: 400;">The smart home for all your big ideas.</p>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding: 40px;">
+              <h2 style="color: #111827; font-size: 22px; font-weight: 700; margin: 0;">Hi {{name}},</h2>
+              <p style="color: #4B5563; font-size: 16px; line-height: 1.6; margin-top: 16px;">
+                We're thrilled to have you here! Your journey to a more organized life begins with a single step. To get started and secure your account, please verify your email address below.
+              </p>
+
+              <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-top: 32px;">
+                <tr>
+                  <td align="center">
+                    <a href="{{activation_link}}" style="display: inline-block; background-color: #4F46E5; color: #ffffff; padding: 16px 32px; font-size: 16px; font-weight: 600; text-decoration: none; border-radius: 8px; box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.3);">
+                      Activate Account
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="color: #9CA3AF; font-size: 14px; text-align: center; margin-top: 24px;">
+                Button not working? Copy this link: <br>
+                <a href="#" style="color: #4F46E5; text-decoration: underline;">{{activation_link}}</a>
+              </p>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding: 0 40px 40px 40px; border-top: 1px solid #F3F4F6;">
+              <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-top: 30px;">
+                <tr>
+                  <td align="center">
+                    <p style="color: #9CA3AF; font-size: 12px; margin: 0;">
+                      © 2026 iNotes Inc. | 123 Tech Lane, San Francisco, CA
+                    </p>
+                    <div style="margin-top: 16px;">
+                      <a href="#" style="color: #6B7280; text-decoration: none; margin: 0 10px; font-size: 12px;">Privacy Policy</a>
+                      <a href="#" style="color: #6B7280; text-decoration: none; margin: 0 10px; font-size: 12px;">Support</a>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
