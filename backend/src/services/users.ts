@@ -93,9 +93,10 @@ const verifyUserAccount = async (token: string): Promise<void> => {
   }
 }
 
-const searchUser = async (email: string) => {
+const searchUser = async (email: string, userId: string) => {
   try {
     const usersList = await User.find({
+      _id: { $ne: userId },
       $or: [
         { email: { $regex: email, $options: 'i' } },
         { fullName: { $regex: email, $options: 'i' } }

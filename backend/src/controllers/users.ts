@@ -118,8 +118,9 @@ export const loginUser = async (req: Request, res: Response) => {
 export const searchUser = async (req: Request, res: Response) => {
   try {
     const searchTerm = req.query.searchTerm
-    const searchList = await userService.searchUser(searchTerm as string)
-    return handleSuccessResponse({ res, data: searchList, message: HTTP_STATUS_MESSAGES.OK })
+    const userId= (req as AuthenticatedRequest).user.sub
+    const searchList = await userService.searchUser(searchTerm as string, userId)
+    return handleSuccessResponse({ res, data: [searchList], message: HTTP_STATUS_MESSAGES.OK })
   } catch (error) {
     return handleErrorResponse(res, error)
   }

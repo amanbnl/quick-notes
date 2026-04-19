@@ -9,7 +9,7 @@ export const getNoteBookList = async (req: Request, res: Response) => {
     const user = (req as AuthenticatedRequest).user
     const workSpaceId = req.query.workSpaceId as string
     const noteBookList = await noteBookService.getNoteBookList(user.sub, workSpaceId)
-    return handleSuccessResponse({ res, data: noteBookList, message: HTTP_STATUS_MESSAGES.OK })
+    return handleSuccessResponse({ res, data: [noteBookList], message: HTTP_STATUS_MESSAGES.OK })
   } catch (error) {
     return handleErrorResponse(res, error)
   }
