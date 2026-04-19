@@ -9,19 +9,22 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <section className="flex bg-slate-50 min-h-screen">
-      {/* Global Command Palette - Always listening */}
+<section className="flex bg-slate-50 min-h-screen">
       <CommandPalette />
       
-      <Sidebar />
+      {/* 1. Added relative and z-[60] here to ensure the sidebar 
+          is physically on a higher layer than the main content */}
+      <div className="relative shrink-0">
+        <Sidebar />
+      </div>
       
-      <main className="flex-1 lg:p-8 p-4"> 
-        {/* Added responsive padding ^ */}
-        <div className="max-w-[1400px] mx-auto"> 
-          {/* Increased max-width for that "Elite" spacious feel */}
+      {/* 2. Added z-0 to the main area to keep it below the sidebar's popouts */}
+      <main className="flex-1 lg:p-8 p-4 relative z-0"> 
+        <div className="max-w-350 mx-auto"> 
           {children}
         </div>
       </main>
+      
       <MobileNav/>
     </section>
   );

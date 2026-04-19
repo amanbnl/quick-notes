@@ -1,5 +1,6 @@
 import axios, { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
-
+import { AUTH_TOKEN_KEY } from '../constants';
+import { deleteCookie } from 'cookies-next';
 // Define the shape of your backend response
 interface ApiResponse {
   status: number;
@@ -18,7 +19,7 @@ const api = axios.create({
 // --- REQUEST INTERCEPTOR ---
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem(AUTH_TOKEN_KEY);
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -32,7 +33,7 @@ api.interceptors.response.use(
   (response: AxiosResponse<ApiResponse>) => {
     const { message, data, error } = response.data;
     return {
-      data: data?.[0] || null,
+      data: data[0] || [],
       message,
       errors: error || []
     } as any;
@@ -41,8 +42,8 @@ api.interceptors.response.use(
     const status = err.response?.status;
     const errorMessage = err.response?.data?.message || "An unexpected error occurred";
     if (status === 401) {
-      localStorage.clear();
-      
+      localStorage.removeItem(AUTH_TOKEN_KEY);
+      deleteCookie(AUTH_TOKEN_KEY); // Clear cookies if needed
       // Redirect to login
       if (typeof window !== 'undefined') {
         window.location.href = '/login';

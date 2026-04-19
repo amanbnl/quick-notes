@@ -5,10 +5,11 @@ import {
   Languages, Trash2, Plus, Camera, ChevronRight, ShieldAlert, Globe
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
+import { useUserStore } from '@/store/useUserStore';
 
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState('identity');
-
+  const { user, setUser } = useUserStore();
   const tabs = [
     { id: 'identity', label: 'Identity', icon: User, desc: 'Personal info' },
     { id: 'skills', label: 'Languages', icon: Languages, desc: 'Communication' },
@@ -75,7 +76,7 @@ export default function ProfilePage() {
                     <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-indigo-600 rounded-xl flex items-center justify-center text-white border-2 border-white shadow-lg"><Camera size={14} /></div>
                   </div>
                   <div className="text-center sm:text-left">
-                    <h4 className="font-black text-zinc-900 text-lg">Identity Photo</h4>
+                    <h4 className="font-black text-zinc-900 text-lg">{user?.fullName}</h4>
                     <p className="text-sm font-medium text-zinc-400 mb-4">Upload a professional headshot.</p>
                     <div className="flex gap-2 justify-center sm:justify-start">
                       <button className="px-4 py-2 bg-white text-zinc-900 rounded-xl text-xs font-black border border-zinc-200 hover:bg-zinc-50 transition-all cursor-pointer">Update</button>

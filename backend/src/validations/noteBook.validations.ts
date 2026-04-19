@@ -17,3 +17,21 @@ export const noteBookIdSchema = Joi.object({
       'string.pattern.base': 'Invalid note book id'
     })
 })
+
+export const updateNoteBookSchema = Joi.object({
+  id: Joi.string()
+    .regex(/^[0-9a-fA-F]{24}$/)
+    .required()
+    .messages({
+      'string.pattern.base': 'Invalid note book id'
+    }),
+
+  name: Joi.string(),
+
+  workSpaceId: Joi.string()
+    .regex(/^[0-9a-fA-F]{24}$/)
+    .messages({
+      'string.pattern.base': 'Invalid work space id'
+    })
+    .allow(null)
+})

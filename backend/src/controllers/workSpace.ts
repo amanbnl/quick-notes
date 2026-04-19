@@ -8,7 +8,7 @@ export const getWorkSpaceList = async (req: Request, res: Response) => {
   try {
     const userId = (req as AuthenticatedRequest).user.sub
     const workSpaceList = await workSpaceService.getWorkSpaceList(userId)
-    return handleSuccessResponse({ res, data: workSpaceList, message: HTTP_STATUS_MESSAGES.OK })
+    return handleSuccessResponse({ res, data: [workSpaceList], message: HTTP_STATUS_MESSAGES.OK })
   } catch (error) {
     return handleErrorResponse(res, error)
   }
