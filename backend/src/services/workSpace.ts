@@ -49,26 +49,30 @@ const getWorkSpaceList = async (userId: string) => {
 
 const createWorkSpace = async (reqBody: ICreateWorkSpace): Promise<string> => {
   try {
-    const {
-      name,
-      userId
-    } = reqBody
-    const userExistence = await userService.getUserDetails(userId)
+    const { name, userId } = reqBody;
+
+    const userExistence = await userService.getUserDetails(userId);
     if (!userExistence) {
-      throw new CustomError({ message: "User not Found", status: HTTP_STATUS.NOT_FOUND })
+      throw new CustomError({
+        message: "User not Found",
+        status: HTTP_STATUS.NOT_FOUND
+      });
     }
 
     const workSpace = {
       ownerId: userExistence._id,
-      name
-    }
-    const createdWorkSpace = await WorkSpace.create(workSpace)
-    const workSpaceId = createdWorkSpace._id.toHexString()
-    return workSpaceId
+      name,
+      users: [userExistence._id],
+      memberCount: 1
+    };
+
+    const createdWorkSpace = await WorkSpace.create(workSpace);
+    return createdWorkSpace._id.toHexString();
+
   } catch (error) {
-    return handleError(error)
+    return handleError(error);
   }
-}
+};
 
 const updateWorkSpaceDetails = async (id: string, reqBody: IUpdateWorkSpace): Promise<string> => {
   try {
@@ -117,16 +121,18 @@ const shareWorkSpace = async (reqBody: IShareWorkSpace): Promise<void> => {
       [
         {
           $set: {
-            users: { $setUnion: ["$users", userObjectIds] },
+            users: {
+              $setUnion: ["$users", userObjectIds]
+            },
             memberCount: {
-              $add: [
-                "$memberCount",
-                { $size: { $setDifference: [userObjectIds, "$users"] } }
-              ]
+              $size: {
+                $setUnion: ["$users", userObjectIds]
+              }
             }
           }
         }
-      ]
+      ],
+      { updatePipeline: true }
     );
   } catch (error) {
     return handleError(error);
@@ -138,21 +144,14 @@ const revokeWorkSpaceAccess = async (reqBody: IShareWorkSpace): Promise<void> =>
     const { workSpaceId, userIds } = reqBody;
     const userObjectIds = userIds.map(id => new Types.ObjectId(id));
 
-    const result = await WorkSpace.updateOne(
+    await WorkSpace.collection.updateOne(
       { _id: new Types.ObjectId(workSpaceId) },
       [
         {
           $set: {
             users: { $setDifference: ["$users", userObjectIds] },
             memberCount: {
-              $subtract: [
-                "$memberCount",
-                {
-                  $size: {
-                    $setIntersection: ["$users", userObjectIds]
-                  }
-                }
-              ]
+              $size: { $setDifference: ["$users", userObjectIds] }
             }
           }
         }
@@ -162,7 +161,6 @@ const revokeWorkSpaceAccess = async (reqBody: IShareWorkSpace): Promise<void> =>
     return handleError(error);
   }
 }
-
 
 
 export const workSpaceService = {

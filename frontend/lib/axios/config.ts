@@ -44,6 +44,7 @@ api.interceptors.response.use(
     if (status === 401) {
       localStorage.removeItem(AUTH_TOKEN_KEY);
       deleteCookie(AUTH_TOKEN_KEY); // Clear cookies if needed
+      deleteCookie('user-storage')
       // Redirect to login
       if (typeof window !== 'undefined') {
         window.location.href = '/login';

@@ -60,7 +60,7 @@ const dummyUsers = [
 export const createUser = async (req: Request, res: Response) => {
   try {
     const userId = await userService.createUser(req.body)
-    return handleSuccessResponse({ res, message: HTTP_STATUS_MESSAGES.CREATED, data: [{ id: userId }] })
+    return handleSuccessResponse({ res, message: HTTP_STATUS_MESSAGES.CREATED, data: { id: userId } })
   } catch (error) {
     return handleErrorResponse(res, error)
   }
@@ -73,7 +73,7 @@ export const fetchUserDetails = async (req: Request, res: Response) => {
     if (!userDetails) {
       throw new CustomError({ message: HTTP_STATUS_MESSAGES.NOT_FOUND, status: HTTP_STATUS.NOT_FOUND })
     }
-    return handleSuccessResponse({ res, message: HTTP_STATUS_MESSAGES.OK, data: [userDetails] })
+    return handleSuccessResponse({ res, message: HTTP_STATUS_MESSAGES.OK, data: userDetails })
   } catch (error) {
     return handleErrorResponse(res, error)
   }
@@ -82,7 +82,7 @@ export const fetchUserDetails = async (req: Request, res: Response) => {
 export const updateUserDetails = async (req: Request, res: Response) => {
   try {
     const userId = await userService.updateUserDetails(req.params.id as string, req.body)
-    return handleSuccessResponse({ res, message: HTTP_STATUS_MESSAGES.OK, data: [{ id: userId }] })
+    return handleSuccessResponse({ res, message: HTTP_STATUS_MESSAGES.OK, data: { id: userId } })
   } catch (error) {
     return handleErrorResponse(res, error)
   }
@@ -109,7 +109,7 @@ export const verifyUser = async (req: Request, res: Response) => {
 export const loginUser = async (req: Request, res: Response) => {
   try {
     const loginResponse = await authService.login(req.body)
-    return handleSuccessResponse({ res, data: [loginResponse], message: HTTP_STATUS_MESSAGES.OK })
+    return handleSuccessResponse({ res, data: loginResponse, message: HTTP_STATUS_MESSAGES.OK })
   } catch (error) {
     return handleErrorResponse(res, error)
   }
@@ -120,7 +120,7 @@ export const searchUser = async (req: Request, res: Response) => {
     const searchTerm = req.query.searchTerm
     const userId= (req as AuthenticatedRequest).user.sub
     const searchList = await userService.searchUser(searchTerm as string, userId)
-    return handleSuccessResponse({ res, data: [searchList], message: HTTP_STATUS_MESSAGES.OK })
+    return handleSuccessResponse({ res, data: searchList, message: HTTP_STATUS_MESSAGES.OK })
   } catch (error) {
     return handleErrorResponse(res, error)
   }

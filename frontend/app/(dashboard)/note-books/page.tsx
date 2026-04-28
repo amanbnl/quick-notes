@@ -91,7 +91,7 @@ function NotebookModal ({ isOpen, onClose, onSuccess, initialData, workspaceId, 
         <div className={cn("absolute top-0 left-0 w-full h-2 transition-colors duration-500", selectedColor)} />
         <div className="flex justify-between items-center mb-8">
           <h2 className="text-2xl font-black text-zinc-900 tracking-tight">{title}</h2>
-          <button onClick={onClose} className="p-2 hover:bg-zinc-100 rounded-xl transition-all"><X size={20} /></button>
+          <button onClick={onClose} className="p-2 hover:bg-zinc-100 rounded-xl transition-all cursor-pointer"><X size={20} /></button>
         </div>
         <form onSubmit={handleSubmit(onSuccess)} className="space-y-6">
           <div className="space-y-2">
@@ -102,11 +102,11 @@ function NotebookModal ({ isOpen, onClose, onSuccess, initialData, workspaceId, 
             <label className="text-[10px] font-black uppercase tracking-widest text-zinc-800 ml-1">Theme Color</label>
             <div className="flex flex-wrap gap-3 my-1">
               {colors.map((c) => (
-                <button key={c.name} type="button" onClick={() => setValue('color', c.class)} className={cn("w-10 h-10 rounded-full transition-all active:scale-90", c.class, selectedColor === c.class ? "ring-4 ring-offset-2 ring-zinc-900" : "opacity-40 hover:opacity-100")} />
+                <button key={c.name} type="button" onClick={() => setValue('color', c.class)} className={cn("w-10 h-10 rounded-full transition-all active:scale-90 cursor-pointer", c.class, selectedColor === c.class ? "ring-4 ring-offset-2 ring-zinc-900" : "opacity-40 hover:opacity-100")} />
               ))}
             </div>
           </div>
-          <button type="submit" disabled={isSubmitting} className="w-full py-4 bg-zinc-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-zinc-800 transition-all active:scale-95 flex items-center justify-center gap-2">
+          <button type="submit" disabled={isSubmitting} className="cursor-pointer w-full py-4 bg-zinc-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-zinc-800 transition-all active:scale-95 flex items-center justify-center gap-2">
             {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : "Save Changes"}
           </button>
         </form>
@@ -133,7 +133,6 @@ function ShareModal ({ isOpen, onClose, notebook }: {
       setIsSearching(true);
       try {
         const { data } = await api.get(`/users/search?searchTerm=${query}`);
-        console.log("Search results ->", data);
         // Exclude already selected
         setResults(data.filter((u: any) => !selectedUsers.find(s => s._id === u._id)));
       } catch (e) {
@@ -189,11 +188,11 @@ function ShareModal ({ isOpen, onClose, notebook }: {
               <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">{notebook?.name}</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-zinc-100 rounded-xl transition-all"><X size={20} /></button>
+          <button onClick={onClose} className="cursor-pointer p-2 hover:bg-zinc-100 rounded-xl transition-all text-zinc-800"><X size={20} /></button>
         </div>
 
         {/* Selected Users List */}
-        <div className="space-y-2 mb-6 max-h-[160px] overflow-y-auto custom-scrollbar">
+        {/* <div className="space-y-2 mb-6 max-h-40 overflow-y-auto custom-scrollbar">
           {selectedUsers.map(u => (
             <div key={u._id} className="flex items-center justify-between p-3 bg-zinc-50 rounded-2xl border border-zinc-100 animate-in slide-in-from-right-2">
               <div className="flex items-center gap-3">
@@ -202,23 +201,48 @@ function ShareModal ({ isOpen, onClose, notebook }: {
                 </div>
                 <span className="text-sm font-bold text-zinc-900">{u.fullName}</span>
               </div>
-
+            
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => toggleRole(u._id)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-zinc-200 rounded-lg text-[10px] font-black uppercase tracking-tighter hover:border-indigo-500 transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-zinc-200 rounded-lg text-[10px] font-black uppercase tracking-tighter hover:border-indigo-500 transition-colors text-zinc-600 cursor-pointer"
                 >
                   {u.role === 'editor' ? <ShieldCheck size={12} className="text-indigo-600" /> : <Eye size={12} />}
                   {u.role}
                 </button>
-                <button onClick={() => setSelectedUsers(selectedUsers.filter(x => x._id !== u._id))} className="p-1.5 text-zinc-400 hover:text-rose-500">
+                <button onClick={() => setSelectedUsers(selectedUsers.filter(x => x._id !== u._id))} className=" cursor-pointer p-1.5 text-zinc-400 hover:text-rose-500">
                   <X size={16} />
                 </button>
               </div>
             </div>
           ))}
-        </div>
+        </div> */}
+        {/* Updated User Tags Section */}
+        <div className="flex flex-wrap gap-2 mb-6 max-h-32 overflow-y-auto custom-scrollbar">
+          {selectedUsers.map(u => (
+            <div
+              key={u._id}
+              className="group flex items-center gap-2 pl-3 pr-2 py-1.5 bg-zinc-900 text-white rounded-xl border border-zinc-800 animate-in zoom-in-95 duration-200"
+            >
+              <span className="text-[10px] font-black uppercase tracking-wider truncate max-w-[120px]">
+                {u.fullName}
+              </span>
 
+              <button
+                onClick={() => setSelectedUsers(selectedUsers.filter(x => x._id !== u._id))}
+                className="p-0.5 hover:bg-white/20 rounded-md transition-colors cursor-pointer"
+              >
+                <X size={14} className="text-zinc-400 group-hover:text-white" />
+              </button>
+            </div>
+          ))}
+
+          {selectedUsers.length === 0 && (
+            <div className="w-full text-center py-2">
+              <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">No members selected</p>
+            </div>
+          )}
+        </div>
         {/* Search Input */}
         <div className="relative mb-8">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" size={18} />
@@ -226,7 +250,7 @@ function ShareModal ({ isOpen, onClose, notebook }: {
             value={query}
             onChange={e => setQuery(e.target.value)}
             placeholder="Search collaborators..."
-            className="w-full pl-12 pr-4 py-4 bg-zinc-50 border border-zinc-100 rounded-2xl outline-none font-bold focus:bg-white focus:border-indigo-500 transition-all"
+            className=" text-zinc-800 w-full pl-12 pr-4 py-4 bg-zinc-50 border border-zinc-100 rounded-2xl outline-none font-bold placeholder:text-zinc-600 focus:bg-white focus:border-indigo-500 transition-all"
           />
 
           {/* Search Results Dropdown */}
@@ -241,7 +265,7 @@ function ShareModal ({ isOpen, onClose, notebook }: {
                       setQuery('');
                       setResults([]);
                     }}
-                    className="w-full px-6 py-4 hover:bg-zinc-50 text-left flex items-center justify-between group transition-colors"
+                    className="w-full px-6 py-4 hover:bg-zinc-50 text-left flex items-center justify-between group transition-colors cursor-pointer"
                   >
                     <div className="flex flex-col">
                       <span className="font-bold text-zinc-900 text-sm">{u.name}</span>
@@ -278,7 +302,7 @@ export default function NotesDashboard () {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  const workspaceId = searchParams.get('workspaceId');
+  const workspaceId = searchParams.get('workSpace');
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [notebooks, setNotebooks] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -296,7 +320,8 @@ export default function NotesDashboard () {
   const fetchNoteBooks = async () => {
     setIsLoading(true);
     try {
-      const noteBookListResp = await api.get(`/note-books/list`);
+      const listURL = workspaceId ? `/note-books/list?workSpaceId=${workspaceId}` : '/note-books/list';
+      const noteBookListResp = await api.get(listURL);
       const noteBookList = noteBookListResp.data;
       setNotebooks(noteBookList.map((nb: any) => ({
         ...nb,
@@ -311,7 +336,7 @@ export default function NotesDashboard () {
 
   useEffect(() => {
     fetchNoteBooks();
-  }, []);
+  }, [workspaceId]);
 
   const handleAction = async (action: () => Promise<void>) => {
     await action();
@@ -402,9 +427,10 @@ export default function NotesDashboard () {
             <div
               key={notebook._id}
               onClick={() => router.push(`/note-books/${notebook._id}`)}
-              className="group relative bg-white border border-zinc-200/50 rounded-[32px] lg:rounded-[40px] p-6 lg:p-8 hover:shadow-[0_40px_80px_-12px_rgba(0,0,0,0.08)] transition-all duration-500 cursor-pointer border-b-4 active:translate-y-0.5"
+              /* FIX 1: Added 'flex flex-col' and 'h-full' to make the card a flex container */
+              className="group relative bg-white border border-zinc-200/50 rounded-[32px] lg:rounded-[40px] p-6 lg:p-8 hover:shadow-[0_40px_80px_-12px_rgba(0,0,0,0.08)] transition-all duration-500 cursor-pointer border-b-4 active:translate-y-0.5 flex flex-col h-full"
             >
-              <div className="flex justify-between items-start mb-10 relative">
+              <div className="flex justify-between items-start mb-10 relative shrink-0">
                 <div className={cn("w-14 h-14 lg:w-16 lg:h-16 rounded-2xl flex items-center justify-center text-white shadow-xl transform group-hover:rotate-6 transition-transform", notebook.color)}>
                   <Folder size={28} />
                 </div>
@@ -424,12 +450,21 @@ export default function NotesDashboard () {
                   )}
                 </div>
               </div>
-              <h3 className="text-2xl lg:text-3xl font-black text-zinc-900 mb-2 tracking-tighter group-hover:text-indigo-600 transition-colors">
-                {notebook.name}
-              </h3>
-              <p className="text-sm font-bold text-zinc-400">{notebook.notes || 0} Notes</p>
-              <div className="mt-12 flex items-center justify-end">
-                <div onClick={(e) => { e.stopPropagation(); setActiveNotebook(notebook); setModalMode('share'); }} className="w-12 h-12 rounded-full bg-zinc-50 flex items-center justify-center text-zinc-400 group-hover:bg-zinc-900 group-hover:text-white transition-all duration-500 shadow-sm hover:scale-110 active:scale-95">
+
+              {/* Content wrapper */}
+              <div className="flex-1">
+                <h3 className="text-2xl lg:text-3xl font-black text-zinc-900 mb-2 tracking-tighter group-hover:text-indigo-600 transition-colors line-clamp-2">
+                  {notebook.name}
+                </h3>
+                <p className="text-sm font-bold text-zinc-400">{notebook.notes?.length || 0} {notebook.notes?.length === 1 ? 'Note': 'Notes'} </p>
+              </div>
+
+              {/* FIX 2: Replaced 'mt-12' with 'mt-auto' and added 'pt-6' for breathing room */}
+              <div className="mt-auto pt-6 flex items-center justify-end">
+                <div
+                  onClick={(e) => { e.stopPropagation(); setActiveNotebook(notebook); setModalMode('share'); }}
+                  className="w-12 h-12 rounded-full bg-zinc-50 flex items-center justify-center text-zinc-400 group-hover:bg-zinc-900 group-hover:text-white transition-all duration-500 shadow-sm hover:scale-110 active:scale-95"
+                >
                   <ArrowUpRight size={24} />
                 </div>
               </div>

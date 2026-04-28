@@ -8,7 +8,7 @@ import { AuthenticatedRequest } from "../interfaces/common";
 export const createNote = async (req: Request, res: Response) => {
   try {
     const createdId = await noteService.createNote({...req.body, userId: (req as AuthenticatedRequest).user.sub})
-    return handleSuccessResponse({ res, data: [{ id: createdId }], status: HTTP_STATUS.CREATED, message: HTTP_STATUS_MESSAGES.CREATED })
+    return handleSuccessResponse({ res, data: { id: createdId }, status: HTTP_STATUS.CREATED, message: HTTP_STATUS_MESSAGES.CREATED })
   } catch (error) {
     return handleErrorResponse(res, error)
   }
@@ -20,7 +20,7 @@ export const getNoteDetails = async (req: Request, res: Response) => {
     if (!details) {
       throw new CustomError({ message: HTTP_STATUS_MESSAGES.NOT_FOUND, status: HTTP_STATUS.NOT_FOUND })
     }
-    return handleSuccessResponse({ res, data: [details], message: HTTP_STATUS_MESSAGES.OK })
+    return handleSuccessResponse({ res, data: details, message: HTTP_STATUS_MESSAGES.OK })
   } catch (error) {
     return handleErrorResponse(res, error)
   }
@@ -29,7 +29,7 @@ export const getNoteDetails = async (req: Request, res: Response) => {
 export const updateNoteDetails = async (req: Request, res: Response) => {
   try {
     const updatedId = await noteService.updateNote({ ...req.body, id: req.params.id as string })
-    return handleSuccessResponse({ res, data: [{ id: updatedId }], message: HTTP_STATUS_MESSAGES.OK })
+    return handleSuccessResponse({ res, data: { id: updatedId }, message: HTTP_STATUS_MESSAGES.OK })
   } catch (error) {
     return handleErrorResponse(res, error)
   }

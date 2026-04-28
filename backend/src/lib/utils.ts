@@ -48,7 +48,7 @@ export const handleSuccessResponse = (props: GlobalResponse): Response => {
   return res.status(status).json({
     message,
     status: status,
-    data,
+    data: [data],
     error: error ?? null
   });
 };

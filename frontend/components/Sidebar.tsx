@@ -3,7 +3,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   LayoutDashboard, Settings, PlusCircle, ChevronDown,
   Hash, Layers, X, Loader2, LogOut, MoreVertical,
-  Trash2, Edit2, UserPlus, LogOut as LeaveIcon, Check, Search, User
+  Trash2, Edit2, UserPlus, LogOut as LeaveIcon, Check, Search, User,
+  Share2,
+  ShieldCheck,
+  Eye
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import Link from 'next/link';
@@ -66,166 +69,190 @@ function WorkspaceModal ({ isOpen, onClose, onSuccess, initialData }: {
 }
 
 // --- WORKSPACE INVITATION MODAL ---
-function WorkspaceInviteModal ({ isOpen, onClose, workSpaceId }: {
+
+
+function WorkspaceInviteModal ({ isOpen, onClose, workSpace }: {
   isOpen: boolean,
   onClose: () => void,
-  workSpaceId: string
+  workSpace: any
 }) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<any[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [isInviting, setIsInviting] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
 
-  // Debounced Search Logic
+  // Search Logic
   useEffect(() => {
     const search = async () => {
-      if (query.length < 2) {
-        setResults([]);
-        return;
-      }
+      if (query.length < 2) return setResults([]);
       setIsSearching(true);
       try {
         const { data } = await api.get(`/users/search?searchTerm=${query}`);
-        // Filter out users already in the selected list
-        const filtered = data.filter((u: any) => !selectedUsers.find(s => s._id === u._id));
-        setResults(filtered);
+        // Exclude already selected
+        setResults(data.filter((u: any) => !selectedUsers.find(s => s._id === u._id)));
       } catch (e) {
-        console.error("Search failed:", e);
+        console.error(e);
       } finally {
         setIsSearching(false);
       }
     };
-
-    const timer = setTimeout(search, 300);
-    return () => clearTimeout(timer);
+    const t = setTimeout(search, 300);
+    return () => clearTimeout(t);
   }, [query, selectedUsers]);
 
-  const handleInvite = async () => {
-    setIsInviting(true);
+  const toggleRole = (userId: string) => {
+    setSelectedUsers(prev => prev.map(u =>
+      u._id === userId
+        ? { ...u, role: u.role === 'viewer' ? 'editor' : 'viewer' }
+        : u
+    ));
+  };
+
+  const handleShare = async () => {
+    setIsSharing(true);
     try {
-      await api.post('/work-spaces/invite', {
-        workSpaceId,
-        userIds: selectedUsers.map(u => u._id)
+      await api.post(`/work-spaces/invite`, {
+        workSpaceId: workSpace._id,
+        userIds: selectedUsers.map(u => (u._id))
       });
       setSelectedUsers([]);
       onClose();
     } catch (e) {
-      console.error("Invite failed:", e);
+      console.error(e);
     } finally {
-      setIsInviting(false);
+      setIsSharing(false);
     }
-  };
-
-  const removeUser = (id: string) => {
-    setSelectedUsers(selectedUsers.filter(u => u._id !== id));
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm animate-in fade-in duration-300"
-        onClick={onClose}
-      />
+    <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm animate-in fade-in" onClick={onClose} />
 
-      <div className="relative w-full max-w-lg bg-white rounded-[40px] shadow-2xl p-8 lg:p-10 animate-in zoom-in-95 duration-300">
+      <div className="relative w-full max-w-lg bg-white rounded-[40px] shadow-2xl p-8 lg:p-10 animate-in zoom-in-95 overflow-hidden">
+        {/* Decorative Top Accent */}
+        <div className={cn("absolute top-0 left-0 w-full h-2", workSpace?.color || 'bg-indigo-500')} />
 
-        {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600">
-              <UserPlus size={24} />
+            <div className="w-12 h-12 bg-zinc-50 rounded-2xl flex items-center justify-center text-zinc-900">
+              <Share2 size={24} />
             </div>
             <div>
-              <h2 className="text-2xl font-black text-zinc-900 tracking-tight">Invite Members</h2>
-              <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Workspace ID: {workSpaceId.slice(-6)}</p>
+              <h2 className="text-xl font-black text-zinc-900 tracking-tight">Share Collection</h2>
+              <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">{workSpace?.name}</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-zinc-100 rounded-xl transition-all"><X size={20} /></button>
+          <button onClick={onClose} className="cursor-pointer p-2 hover:bg-zinc-100 rounded-xl transition-all text-zinc-800"><X size={20} /></button>
         </div>
 
-        {/* Selected Users (Tags) */}
-        <div className="flex flex-wrap gap-2 min-h-[40px] mb-6">
-          {selectedUsers.length === 0 && (
-            <p className="text-sm font-medium text-zinc-300 italic py-2">No users selected yet...</p>
-          )}
+        {/* Selected Users List */}
+        {/* <div className="space-y-2 mb-6 max-h-40 overflow-y-auto custom-scrollbar">
+          {selectedUsers.map(u => (
+            <div key={u._id} className="flex items-center justify-between p-3 bg-zinc-50 rounded-2xl border border-zinc-100 animate-in slide-in-from-right-2">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-zinc-400 border border-zinc-100">
+                  <User size={14} />
+                </div>
+                <span className="text-sm font-bold text-zinc-900">{u.fullName}</span>
+              </div>
+            
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => toggleRole(u._id)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-zinc-200 rounded-lg text-[10px] font-black uppercase tracking-tighter hover:border-indigo-500 transition-colors text-zinc-600 cursor-pointer"
+                >
+                  {u.role === 'editor' ? <ShieldCheck size={12} className="text-indigo-600" /> : <Eye size={12} />}
+                  {u.role}
+                </button>
+                <button onClick={() => setSelectedUsers(selectedUsers.filter(x => x._id !== u._id))} className=" cursor-pointer p-1.5 text-zinc-400 hover:text-rose-500">
+                  <X size={16} />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div> */}
+        {/* Updated User Tags Section */}
+        <div className="flex flex-wrap gap-2 mb-6 max-h-32 overflow-y-auto custom-scrollbar">
           {selectedUsers.map(u => (
             <div
               key={u._id}
-              className="flex items-center gap-2 px-3 py-2 bg-zinc-900 text-white rounded-xl text-[10px] font-black uppercase tracking-wider animate-in scale-in-90"
+              className="group flex items-center gap-2 pl-3 pr-2 py-1.5 bg-zinc-900 text-white rounded-xl border border-zinc-800 animate-in zoom-in-95 duration-200"
             >
-              <span>{u.name}</span>
+              <span className="text-[10px] font-black uppercase tracking-wider truncate max-w-[120px]">
+                {u.fullName}
+              </span>
+
               <button
-                onClick={() => removeUser(u._id)}
-                className="hover:text-rose-400 transition-colors border-l border-white/20 pl-1 ml-1"
+                onClick={() => setSelectedUsers(selectedUsers.filter(x => x._id !== u._id))}
+                className="p-0.5 hover:bg-white/20 rounded-md transition-colors cursor-pointer"
               >
-                <X size={14} />
+                <X size={14} className="text-zinc-400 group-hover:text-white" />
               </button>
             </div>
           ))}
-        </div>
 
-        {/* Search Input Container */}
+          {selectedUsers.length === 0 && (
+            <div className="w-full text-center py-2">
+              <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">No members selected</p>
+            </div>
+          )}
+        </div>
+        {/* Search Input */}
         <div className="relative mb-8">
-          <div className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-400">
-            {isSearching ? <Loader2 size={18} className="animate-spin" /> : <Search size={18} />}
-          </div>
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" size={18} />
           <input
             value={query}
             onChange={e => setQuery(e.target.value)}
-            placeholder="Search by name or email..."
-            className="w-full pl-14 pr-6 py-5 bg-zinc-50 border border-zinc-100 rounded-[24px] text-zinc-800 font-bold outline-none focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 transition-all"
+            placeholder="Search collaborators..."
+            className=" text-zinc-800 w-full pl-12 pr-4 py-4 bg-zinc-50 border border-zinc-100 rounded-2xl outline-none font-bold placeholder:text-zinc-600 focus:bg-white focus:border-indigo-500 transition-all"
           />
 
           {/* Search Results Dropdown */}
-          {results.length > 0 && (
-            <div className="absolute top-full left-0 w-full mt-3 bg-white border border-zinc-100 shadow-2xl rounded-[28px] overflow-hidden z-[160] animate-in slide-in-from-top-2">
-              <div className="max-h-[280px] overflow-y-auto">
-                {results.map(u => (
+          {(results.length > 0 || (query.length >= 2 && !isSearching)) && (
+            <div className="absolute top-full left-0 w-full mt-2 bg-white border border-zinc-100 shadow-2xl rounded-2xl overflow-hidden z-10 animate-in fade-in slide-in-from-top-2">
+              {results.length > 0 ? (
+                results.map(u => (
                   <button
                     key={u._id}
                     onClick={() => {
-                      setSelectedUsers([...selectedUsers, u]);
+                      setSelectedUsers([...selectedUsers, { ...u, role: 'viewer' }]);
                       setQuery('');
                       setResults([]);
                     }}
-                    className="group w-full px-6 py-4 hover:bg-indigo-50 text-left flex items-center justify-between transition-all"
+                    className="w-full px-6 py-4 hover:bg-zinc-50 text-left flex items-center justify-between group transition-colors cursor-pointer"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-500 group-hover:bg-indigo-100 group-hover:text-indigo-600 transition-colors">
-                        <User size={18} />
-                      </div>
-                      <div>
-                        <p className="text-sm font-black text-zinc-900">{u.name}</p>
-                        <p className="text-[10px] font-bold text-zinc-400 uppercase">{u.email}</p>
-                      </div>
+                    <div className="flex flex-col">
+                      <span className="font-bold text-zinc-900 text-sm">{u.name}</span>
+                      {/* Removed uppercase class here */}
+                      <span className="text-[10px] text-zinc-400 font-bold">{u.email}</span>
                     </div>
-                    <div className="w-8 h-8 rounded-lg bg-zinc-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Plus size={16} className="text-indigo-600" />
-                    </div>
+                    <Check size={16} className="text-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </button>
-                ))}
-              </div>
+                ))
+              ) : (
+                /* No User Found State */
+                <div className="px-6 py-8 text-center">
+                  <p className="text-sm font-bold text-zinc-400">No user found for "{query}"</p>
+                </div>
+              )}
             </div>
           )}
         </div>
 
-        {/* Action Button */}
         <button
-          onClick={handleInvite}
-          disabled={selectedUsers.length === 0 || isInviting}
-          className="w-full py-5 bg-zinc-900 text-white rounded-[24px] font-black text-xs uppercase tracking-[0.2em] disabled:bg-zinc-100 disabled:text-zinc-400 transition-all active:scale-95 flex items-center justify-center gap-3"
+          onClick={handleShare}
+          disabled={selectedUsers.length === 0 || isSharing}
+          className="w-full py-5 bg-zinc-900 text-white rounded-[24px] font-black text-xs uppercase tracking-[0.2em] hover:bg-zinc-800 disabled:bg-zinc-100 disabled:text-zinc-400 transition-all active:scale-95 flex items-center justify-center gap-3"
         >
-          {isInviting ? <Loader2 className="animate-spin" size={20} /> : "Send Invitations"}
+          {isSharing ? <Loader2 className="animate-spin" size={18} /> : "Invite to work Space"}
         </button>
       </div>
     </div>
   );
 }
-
 // --- DELETE PROMPT MODAL ---
 function DeleteWorkspacePrompt ({ isOpen, onClose, onConfirm, isDeleting }: { isOpen: boolean, onClose: () => void, onConfirm: () => void, isDeleting: boolean }) {
   if (!isOpen) return null;
@@ -267,6 +294,9 @@ export default function Sidebar () {
   const fetchWorkspaces = async () => {
     try {
       const { data } = await api.get('/work-spaces/list');
+      if (data.length == 0) {
+        router.push('/note-books')
+      }
       setWorkSpaces(data.map((ws: any) => ({
         ...ws,
         color: ['text-rose-500', 'text-amber-500', 'text-indigo-500', 'text-emerald-500'][Math.floor(Math.random() * 4)]
@@ -308,7 +338,6 @@ export default function Sidebar () {
       if (modalMode === 'create') await api.post('/work-spaces', data);
       if (modalMode === 'rename') await api.put(`/work-spaces/${selectedWorkspace._id}`, data);
       if (modalMode === 'delete') await api.delete(`/work-spaces/${selectedWorkspace._id}`);
-      if (modalMode === 'invite') { /* Handled in Invite Modal */ }
 
       await fetchWorkspaces();
       setModalMode(null);
@@ -326,6 +355,7 @@ export default function Sidebar () {
   const handleLogout = () => {
     localStorage.removeItem('auth_token');
     deleteCookie('auth_token');
+    deleteCookie('user-storage')
     router.push('/login');
   };
 
@@ -346,7 +376,7 @@ export default function Sidebar () {
       <WorkspaceInviteModal
         isOpen={modalMode === 'invite'}
         onClose={() => setModalMode(null)}
-        workSpaceId={selectedWorkspace?._id}
+        workSpace={selectedWorkspace}
       />
       <DeleteWorkspacePrompt
         isOpen={modalMode === 'delete'}
@@ -393,7 +423,6 @@ export default function Sidebar () {
             {isWorkSpacesOpen && (
               <div className="space-y-1 animate-in slide-in-from-top-2 duration-300">
                 {workSpaces.map((workSpace) => {
-                  console.log("current workspace ->", currentWorkSpaceId, "workspace in loop ->", workSpace._id, "userId ->", user)
                   const isActive = currentWorkSpaceId === workSpace._id;
                   const isOwner = workSpace.ownerId === user?.id;
 
@@ -433,7 +462,7 @@ export default function Sidebar () {
                               /* 4. Use a div instead of a Fragment if the linter is still complaining, 
                                  but keying the specific buttons usually solves it */
                               <div className="flex flex-col gap-0.5">
-                                <button key="opt-invite" onClick={() => { setModalMode('invite'); setSelectedWorkspace(workSpace); setActiveMenuId(null); }} className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-zinc-600 hover:bg-zinc-50 rounded-xl transition-all cursor-pointer">
+                                <button key="opt-invite" onClick={() => { console.log("workspace => ", workSpace); setModalMode('invite'); setSelectedWorkspace(workSpace); setActiveMenuId(null); }} className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-zinc-600 hover:bg-zinc-50 rounded-xl transition-all cursor-pointer">
                                   <UserPlus size={14} /> Invite Members
                                 </button>
                                 <button key="opt-rename" onClick={() => { setModalMode('rename'); setSelectedWorkspace(workSpace); setActiveMenuId(null); }} className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-zinc-600 hover:bg-zinc-50 rounded-xl transition-all cursor-pointer">

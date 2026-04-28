@@ -8,7 +8,7 @@ export const getWorkSpaceList = async (req: Request, res: Response) => {
   try {
     const userId = (req as AuthenticatedRequest).user.sub
     const workSpaceList = await workSpaceService.getWorkSpaceList(userId)
-    return handleSuccessResponse({ res, data: [workSpaceList], message: HTTP_STATUS_MESSAGES.OK })
+    return handleSuccessResponse({ res, data: workSpaceList, message: HTTP_STATUS_MESSAGES.OK })
   } catch (error) {
     return handleErrorResponse(res, error)
   }
@@ -18,7 +18,7 @@ export const getWorkSpaceDetails = async (req: Request, res: Response) => {
   try {
     const workSpaceId = req.params.id as string
     const workSpaceDetails = await workSpaceService.getWorkSpaceDetails(workSpaceId)
-    return handleSuccessResponse({ res, data: [workSpaceDetails], message: HTTP_STATUS_MESSAGES.OK })
+    return handleSuccessResponse({ res, data: workSpaceDetails, message: HTTP_STATUS_MESSAGES.OK })
   } catch (error) {
     return handleErrorResponse(res, error)
   }
@@ -27,7 +27,7 @@ export const getWorkSpaceDetails = async (req: Request, res: Response) => {
 export const createWorkSpace = async (req: Request, res: Response) => {
   try {
     const createdId = await workSpaceService.createWorkSpace({...req.body, userId: (req as AuthenticatedRequest).user.sub})
-    return handleSuccessResponse({ res, status: HTTP_STATUS.CREATED, data: [{ id: createdId }], message: HTTP_STATUS_MESSAGES.CREATED })
+    return handleSuccessResponse({ res, status: HTTP_STATUS.CREATED, data: { id: createdId }, message: HTTP_STATUS_MESSAGES.CREATED })
   } catch (error) {
     return handleErrorResponse(res, error)
   }
@@ -36,7 +36,7 @@ export const createWorkSpace = async (req: Request, res: Response) => {
 export const updateWorkSpace = async (req: Request, res: Response) => {
   try {
     const updatedId = await workSpaceService.updateWorkSpaceDetails(req.params.id as string, req.body)
-    return handleSuccessResponse({ res, data: [{ id: updatedId }], message: HTTP_STATUS_MESSAGES.OK })
+    return handleSuccessResponse({ res, data: { id: updatedId }, message: HTTP_STATUS_MESSAGES.OK })
   } catch (error) {
     return handleErrorResponse(res, error)
   }

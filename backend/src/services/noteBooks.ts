@@ -15,7 +15,8 @@ const getNoteBookDetails = async (id: string) => {
       .populate({
         path: 'notes',
         model: Note,
-        select: 'title jsonBody'
+        select: 'title jsonBody createdAt updatedAt',
+        options: { sort: { createdAt: -1 } }
       })
       .lean();
     return notebook;
