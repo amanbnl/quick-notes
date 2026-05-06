@@ -12,6 +12,7 @@ import Editor from '@/components/Editor';
 import ShareModal from '@/components/modals/ShareModal';
 import { useRouter, useParams } from 'next/navigation';
 import api from '@/lib/axios/config';
+import { useUserStore } from '@/store/useUserStore';
 
 
 function DeleteConfirmModal ({ isOpen, onClose, onConfirm, itemName }: {
@@ -46,9 +47,8 @@ function DeleteConfirmModal ({ isOpen, onClose, onConfirm, itemName }: {
 export default function NoteEditorPage () {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [openShareModal, setOpenShareModal] = useState(false);
-  const [isDeleteOpen, setIsDeleteOpen] = useState<boolean>(false)
-  const [noteToDelete, setNoteToDelete] = useState(null)
-  // States
+  const [isDeleteOpen, setIsDeleteOpen] = useState<boolean>(false);
+  const [noteToDelete, setNoteToDelete] = useState(null);
   const [workspaceData, setWorkspaceData] = useState(null);
   const [activeNote, setActiveNote] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -56,27 +56,33 @@ export default function NoteEditorPage () {
 
   const router = useRouter();
   const { id: notebookId } = useParams();
+  const { user } = useUserStore();
+
+  // PERMISSION CHECK
+  const isOwner = !workspaceData?.workSpaceId || workspaceData?.ownerId?._id === user?.id;
+
+  // Since isOwner is already true when the workspace is null, 
+  // canEdit can simply mirror isOwner.
+  const canEdit = isOwner;
 
   const handleDeleteNote = async () => {
+    if (!canEdit) return;
     try {
       await api.delete(`/notes/${noteToDelete?._id}`).then(async () => {
-        setIsDeleteOpen(false)
-        setNoteToDelete(null)
-        setActiveNote(null)
-        await fetchWorkspace()
-      })
-
+        setIsDeleteOpen(false);
+        setNoteToDelete(null);
+        setActiveNote(null);
+        await fetchWorkspace();
+      });
     } catch (error) {
-
+      console.error(error);
     }
-    console.log("note to delete ->", noteToDelete)
-  }
+  };
+
   const fetchWorkspace = async () => {
     try {
       setLoading(true);
       const res = await api.get(`/note-books/${notebookId}`);
-
-      // Mapping backend keys (title/jsonBody) to local state (name/content)
       const mappedNotes = res.data.notes?.map(n => ({
         ...n,
         name: n.title || "Untitled Note",
@@ -84,8 +90,6 @@ export default function NoteEditorPage () {
       })) || [];
 
       setWorkspaceData({ ...res.data, notes: mappedNotes });
-
-      // 2. Default first note map with editor if notes exist
       if (mappedNotes.length > 0) {
         setActiveNote(mappedNotes[0]);
       }
@@ -95,23 +99,21 @@ export default function NoteEditorPage () {
       setLoading(false);
     }
   };
-  // 1. Fetch Notebook Details on Page Load
-  useEffect(() => {
 
+  useEffect(() => {
     if (notebookId) fetchWorkspace();
   }, [notebookId]);
 
-  // 3. Handle Add Note (Shows Editor for new note)
   const handleAddNewNote = () => {
+    if (!canEdit) return;
     setActiveNote({
       name: "",
       content: "",
-      isNew: true // temporary flag
+      isNew: true
     });
     setSidebarOpen(false);
   };
 
-  // Handle Note Selection from Sidebar
   const handleNoteSelect = (note) => {
     setActiveNote({
       ...note,
@@ -121,34 +123,28 @@ export default function NoteEditorPage () {
     if (window.innerWidth < 1024) setSidebarOpen(false);
   };
 
-  // 4. Manual Save (POST for new, PATCH for existing)
   const handleManualSave = async () => {
-    if (!activeNote) return;
+    if (!activeNote || !canEdit) return;
 
     setIsSaving(true);
     const payload = {
       title: activeNote.name || "Untitled Note",
-      jsonBody: activeNote.content, // Latest content from state
+      jsonBody: activeNote.content,
       id: activeNote._id
     };
 
     try {
       if (activeNote._id) {
-        // Update Existing
         await api.put(`/notes/${activeNote._id}`, payload);
-
-        // Sync Sidebar
         setWorkspaceData(prev => ({
           ...prev,
           notes: prev.notes.map(n => n._id === activeNote._id ? { ...activeNote, updatedAt: new Date().toISOString() } : n)
         }));
       } else {
-        delete payload.id
-        payload['notebookId'] = notebookId
-        // Create New
+        delete payload.id;
+        payload['notebookId'] = notebookId;
         await api.post(`/notes`, payload);
-
-        await fetchWorkspace()
+        await fetchWorkspace();
       }
     } catch (err) {
       console.error("Save failed:", err);
@@ -160,121 +156,141 @@ export default function NoteEditorPage () {
   if (loading) return <div className="h-full w-full flex items-center justify-center font-black text-zinc-300 animate-pulse">LOADING WORKSPACE...</div>;
 
   return (
-    <div className="relative flex h-[calc(100vh-110px)] gap-4 lg:gap-6 overflow-hidden">
+    <>
+      <h1 className="text-3xl lg:text-5xl font-black text-zinc-900 tracking-tighter text-glow-indigo pb-10">
+        {workspaceData ? workspaceData.name : "My Collections"}
+      </h1>
+              <hr className='mb-3 border-zinc-100' />
+      <div className="relative flex h-[calc(100vh-110px)] gap-4 lg:gap-6 overflow-hidden">
 
-      {/* 1. SIDEBAR */}
-      <aside className={cn(
-        "absolute lg:relative z-40 w-70 sm:w-[320px] h-full transition-all duration-500 bg-zinc-50/50 backdrop-blur-xl border border-zinc-200/50 rounded-4xl p-4 flex flex-col",
-        isSidebarOpen ? "left-0 shadow-2xl" : "-left-full lg:left-0 shadow-sm"
-      )}>
-        <div className="flex items-center justify-between px-4 py-3 mb-4">
-          <div className="flex items-center gap-3">
-            <ChevronLeft onClick={() => router.back()} className="text-zinc-400 cursor-pointer hover:text-indigo-600" size={20} />
-            <h2 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest truncate max-w-[120px]">
-              {workspaceData?.name}
-            </h2>
-          </div>
-          <button onClick={handleAddNewNote} className="p-2 bg-zinc-900 text-white rounded-xl active:scale-95 transition-all cursor-pointer">
-            <Plus size={18} />
-          </button>
-        </div>
-
-        <div className="flex-1 space-y-2 overflow-y-auto px-1 custom-scrollbar">
-          {workspaceData?.notes?.map((note) => (
-            <div
-              key={note._id}
-              onClick={() => handleNoteSelect(note)}
-              className={cn(
-                "p-4 rounded-3xl cursor-pointer transition-all border",
-                activeNote?._id === note._id ? "bg-white shadow-sm border-zinc-200" : "border-transparent hover:bg-zinc-100/50"
-              )}
-            >
-              <h4 className={cn("font-bold text-xs truncate", activeNote?._id === note._id ? "text-indigo-600" : "text-zinc-600")}>
-                {note.name || note.title}
-              </h4>
-              <p className="text-[9px] font-bold opacity-30 mt-1 uppercase">
-                {note.updatedAt ? new Date(note.updatedAt).toLocaleDateString() : "Draft"}
-              </p>
+        {/* 1. SIDEBAR */}
+        <aside className={cn(
+          "absolute lg:relative z-40 w-70 sm:w-[320px] h-full transition-all duration-500 bg-zinc-50/50 backdrop-blur-xl border border-zinc-200/50 rounded-4xl p-4 flex flex-col",
+          isSidebarOpen ? "left-0 shadow-2xl" : "-left-full lg:left-0 shadow-sm"
+        )}>
+          <div className="flex items-center justify-between px-4 py-3 mb-4">
+            <div onClick={() => router.back()} className="flex items-center gap-3 cursor-pointer ">
+              <ChevronLeft className="text-zinc-400 hover:text-indigo-600 " size={20} />
+              <h2 className=" hover:text-indigo-600 text-[10px] font-black text-zinc-400 uppercase tracking-widest truncate max-w-[120px]">
+                {workspaceData?.name}
+              </h2>
             </div>
-          ))}
-        </div>
-      </aside>
+            {canEdit && (
+              <button onClick={handleAddNewNote} className="p-2 bg-zinc-900 text-white rounded-xl active:scale-95 transition-all cursor-pointer">
+                <Plus size={18} />
+              </button>
+            )}
+          </div>
 
-      {/* 2. MAIN EDITOR AREA */}
-      <main className="flex-1 bg-white border border-zinc-200/50 rounded-4xl flex flex-col overflow-hidden relative shadow-sm">
-        {activeNote ? (
-          <>
-            <header className="px-6 lg:px-10 py-4 border-b border-zinc-100 flex items-center justify-between bg-white/80 backdrop-blur-md sticky top-0 z-20">
-              <div className="flex items-center gap-4 flex-1">
-                <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2.5 bg-zinc-100 rounded-xl"><Menu size={20} /></button>
-                <div className="flex flex-col flex-1">
-                  <input
-                    value={activeNote.name || ""}
-                    onChange={(e) => setActiveNote({ ...activeNote, name: e.target.value })}
-                    className="bg-transparent border-none focus:outline-none text-base lg:text-lg font-black text-zinc-900"
-                    placeholder="Enter Title..."
-                  />
-                  <div className="flex items-center gap-3 text-[9px] font-bold text-zinc-400 uppercase tracking-widest">
-                    <Calendar size={10} /> {new Date(activeNote.updatedAt || new Date()).toLocaleDateString()}
-                    {isSaving ? <span className="text-amber-500 animate-pulse ml-2">Saving your Notes...</span> : <span className="text-emerald-500 ml-2">Saved</span>}
+          <div className="flex-1 space-y-2 overflow-y-auto px-1 custom-scrollbar">
+            {workspaceData?.notes?.map((note) => (
+              <div
+                key={note._id}
+                onClick={() => handleNoteSelect(note)}
+                className={cn(
+                  "p-4 rounded-3xl cursor-pointer transition-all border",
+                  activeNote?._id === note._id ? "bg-white shadow-sm border-zinc-200" : "border-transparent hover:bg-zinc-100/50"
+                )}
+              >
+                <h4 className={cn("font-bold text-xs truncate", activeNote?._id === note._id ? "text-indigo-600" : "text-zinc-600")}>
+                  {note.name || note.title}
+                </h4>
+                <p className="text-[9px] font-bold opacity-30 mt-1 uppercase">
+                  {note.updatedAt ? new Date(note.updatedAt).toLocaleDateString() : "Draft"}
+                </p>
+              </div>
+            ))}
+          </div>
+        </aside>
+
+        {/* 2. MAIN EDITOR AREA */}
+        <main className="flex-1 bg-white border border-zinc-200/50 rounded-4xl flex flex-col overflow-hidden relative shadow-sm">
+          {activeNote ? (
+            <>
+              <header className="px-6 lg:px-10 py-4 border-b border-zinc-100 flex items-center justify-between bg-white/80 backdrop-blur-md sticky top-0 z-20">
+                <div className="flex items-center gap-4 flex-1">
+                  <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2.5 bg-zinc-100 rounded-xl"><Menu size={20} /></button>
+                  <div className="flex flex-col flex-1">
+                    <input
+                      value={activeNote.name || ""}
+                      onChange={(e) => canEdit && setActiveNote({ ...activeNote, name: e.target.value })}
+                      readOnly={!canEdit}
+                      className={cn(
+                        "bg-transparent border-none focus:outline-none text-base lg:text-lg font-black text-zinc-900",
+                        !canEdit && "cursor-default"
+                      )}
+                      placeholder="Enter Title..."
+                    />
+                    <div className="flex items-center gap-3 text-[9px] font-bold text-zinc-400 uppercase tracking-widest">
+                      <Calendar size={10} /> {new Date(activeNote.updatedAt || new Date()).toLocaleDateString()}
+                      {canEdit && (
+                        isSaving ? <span className="text-amber-500 animate-pulse ml-2">Saving...</span> : <span className="text-emerald-500 ml-2">Saved</span>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={handleManualSave}
-                  disabled={isSaving}
-                  className="flex items-center gap-2 px-6 py-2.5 bg-emerald-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 transition-all cursor-pointer disabled:opacity-50"
-                >
-                  {isSaving ? <Cloud size={14} className="animate-bounce" /> : <Save size={14} />}
-                  {activeNote._id ? "Update" : "Save Now"}
+                {canEdit && (
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={handleManualSave}
+                      disabled={isSaving}
+                      className="flex items-center gap-2 px-6 py-2.5 bg-emerald-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 transition-all cursor-pointer disabled:opacity-50"
+                    >
+                      {isSaving ? <Cloud size={14} className="animate-bounce" /> : <Save size={14} />}
+                      {activeNote._id ? "Update" : "Save Now"}
+                    </button>
+
+                    {activeNote._id && (
+                      <button
+                        onClick={() => { setIsDeleteOpen(true); setNoteToDelete(activeNote); }}
+                        disabled={isSaving}
+                        className="flex items-center gap-2 px-6 py-2.5 bg-red-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-red-600 transition-all cursor-pointer disabled:opacity-50"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    )}
+                  </div>
+                )}
+              </header>
+
+              <div className="flex-1 overflow-y-auto">
+                <Editor
+                  key={activeNote._id || 'new-note-editor'}
+                  initialContent={activeNote.content || activeNote.jsonBody}
+                  editable={canEdit}
+                  onChange={(newContent) => {
+                    if (canEdit) setActiveNote(prev => ({ ...prev, content: newContent }));
+                  }}
+                />
+              </div>
+            </>
+          ) : (
+            <div className="flex-1 flex flex-col items-center justify-center text-center p-10">
+              <div className="w-20 h-20 bg-zinc-50 rounded-[32px] flex items-center justify-center text-zinc-200 mb-6 border border-zinc-100">
+                <Plus size={40} />
+              </div>
+              <h2 className="text-xl font-black text-zinc-900 tracking-tighter mb-2">No Active Note</h2>
+              <p className="text-sm text-zinc-400 font-bold max-w-xs mb-8">
+                {canEdit ? "Click the button below to start writing." : "Select a note from the sidebar to view it."}
+              </p>
+              {canEdit && (
+                <button onClick={handleAddNewNote} className="px-8 py-3 bg-zinc-900 text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:scale-105 transition-all cursor-pointer">
+                  Create New Note
                 </button>
-
-
-                {activeNote._id &&
-                  <button
-                    onClick={(e) => { setIsDeleteOpen(true); setNoteToDelete(activeNote); }}
-                    disabled={isSaving}
-                    className="flex items-center gap-2 px-6 py-2.5 bg-red-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-red-600 transition-all cursor-pointer disabled:opacity-50"
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                }
-              </div>
-            </header>
-
-            <div className="flex-1 overflow-y-auto">
-              <Editor
-                key={activeNote._id || 'new-note-editor'} // Crucial: Resets editor for each note
-                initialContent={activeNote.content || activeNote.jsonBody}
-                onChange={(newContent) => {
-                  setActiveNote(prev => ({ ...prev, content: newContent }));
-                }}
-              />
+              )}
             </div>
-          </>
-        ) : (
-          <div className="flex-1 flex flex-col items-center justify-center text-center p-10">
-            <div className="w-20 h-20 bg-zinc-50 rounded-[32px] flex items-center justify-center text-zinc-200 mb-6 border border-zinc-100">
-              <Plus size={40} />
-            </div>
-            <h2 className="text-xl font-black text-zinc-900 tracking-tighter mb-2">No Active Note</h2>
-            <p className="text-sm text-zinc-400 font-bold max-w-xs mb-8">Click the button below to start writing in this workspace.</p>
-            <button onClick={handleAddNewNote} className="px-8 py-3 bg-zinc-900 text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:scale-105 transition-all cursor-pointer">
-              Create New Note
-            </button>
-          </div>
-        )}
-      </main>
+          )}
+        </main>
 
-      {openShareModal && <ShareModal isOpen={openShareModal} onClose={() => setOpenShareModal(false)} context="notebook" data={workspaceData} />}
-      <DeleteConfirmModal
-        isOpen={isDeleteOpen}
-        onClose={() => { setIsDeleteOpen(false); setNoteToDelete(null); }}
-        onConfirm={handleDeleteNote}
-        itemName={noteToDelete?.title}
-      />
-    </div>
+        {openShareModal && <ShareModal isOpen={openShareModal} onClose={() => setOpenShareModal(false)} context="notebook" data={workspaceData} />}
+        <DeleteConfirmModal
+          isOpen={isDeleteOpen}
+          onClose={() => { setIsDeleteOpen(false); setNoteToDelete(null); }}
+          onConfirm={handleDeleteNote}
+          itemName={noteToDelete?.title || noteToDelete?.name}
+        />
+      </div>
+    </>
   );
 }

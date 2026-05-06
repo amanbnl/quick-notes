@@ -13,15 +13,15 @@ const app = express()
 app.use(express.json())
 app.use(cors())
 
-const globalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
-  message: 'Too many requests , please try again after 15 minutes',
-  standardHeaders: true,
-  legacyHeaders: false,
-});
+// const globalLimiter = rateLimit({
+//   windowMs: 45 * 60 * 1000,
+//   max: 100,
+//   message: 'Too many requests , please try again after 15 minutes',
+//   standardHeaders: true,
+//   legacyHeaders: false,
+// });
 
-app.use(globalLimiter)
+// app.use(globalLimiter)
 
 const APP_PORT = process.env.APP_PORT || 8000
 handleAppRouting(app)

@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import Link from 'next/link';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -278,59 +278,31 @@ export default function Sidebar () {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const currentWorkSpaceId = searchParams.get('workSpace');
-
+  const params = useParams()
+  const currentWorkSpaceId = searchParams.get('workSpace') || params.id;
   const [workSpaces, setWorkSpaces] = useState<any[]>([]);
   const [isWorkSpacesOpen, setIsWorkSpacesOpen] = useState(true);
-  const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
 
   // Modal States
   const [modalMode, setModalMode] = useState<'create' | 'rename' | 'invite' | 'delete' | null>(null);
   const [selectedWorkspace, setSelectedWorkspace] = useState<any>(null);
   const [isActionLoading, setIsActionLoading] = useState(false);
 
-  // Current User (Replace with your actual user context/store)
-  const { user, setUser } = useUserStore(); // Debugging line
+  const { user, logout } = useUserStore();
+
   const fetchWorkspaces = async () => {
     try {
       const { data } = await api.get('/work-spaces/list');
-      if (data.length == 0) {
-        router.push('/note-books')
-      }
       setWorkSpaces(data.map((ws: any) => ({
         ...ws,
         color: ['text-rose-500', 'text-amber-500', 'text-indigo-500', 'text-emerald-500'][Math.floor(Math.random() * 4)]
       })));
     } catch (e) { console.error(e); }
   };
-  const fetchUserDetails = async () => {
-    if (!user?.id) return;
-    const userDetailsResp = await api.get(`/users/${user?.id}`);
-    const userDetails = userDetailsResp.data;
 
-    if (userDetails) {
-      setUser({
-        id: userDetails._id,
-        fullName: userDetails.fullName,
-        email: userDetails.email,
-        profile: {
-          bio: '',
-          experience: [],
-          education: [],
-          certifications: [],
-          languages: [],
-          avatarUrl: undefined
-        }
-      });
-    }
-  }
   useEffect(() => {
     fetchWorkspaces();
   }, []);
-
-  useEffect(() => {
-    fetchUserDetails()
-  }, [user?.id])
 
   const handleWorkspaceAction = async (data?: any) => {
     setIsActionLoading(true);
@@ -345,17 +317,11 @@ export default function Sidebar () {
     } catch (e) { console.error(e); } finally { setIsActionLoading(false); }
   };
 
-  const handleLeaveWorkspace = async (wsId: string) => {
-    try {
-      await api.post('/work-spaces/revoke-access', { userIds: [user?.id], workSpaceId: wsId });
-      fetchWorkspaces();
-    } catch (e) { console.error(e); }
-  };
-
   const handleLogout = () => {
     localStorage.removeItem('auth_token');
     deleteCookie('auth_token');
-    deleteCookie('user-storage')
+    deleteCookie('user-storage');
+    logout();
     router.push('/login');
   };
 
@@ -424,68 +390,23 @@ export default function Sidebar () {
               <div className="space-y-1 animate-in slide-in-from-top-2 duration-300">
                 {workSpaces.map((workSpace) => {
                   const isActive = currentWorkSpaceId === workSpace._id;
-                  const isOwner = workSpace.ownerId === user?.id;
 
                   return (
                     <div key={`ws-container-${workSpace._id}`} className="relative group/ws">
                       <Link
                         href={`/note-books?workSpace=${workSpace._id}`}
                         className={cn(
-                          "flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-300 pr-12",
+                          "flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-300",
                           isActive ? "bg-white text-zinc-900 shadow-sm ring-1 ring-zinc-200/50" : "text-zinc-500 hover:bg-zinc-100"
                         )}
                       >
                         <Hash size={18} className={cn("transition-colors", isActive ? workSpace.color : "text-zinc-300")} />
                         <span className="text-sm font-bold truncate">{workSpace.name}</span>
                       </Link>
-
-                      <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover/ws:opacity-100 transition-opacity">
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation(); // 2. Important: Stop the Link from triggering
-                            setActiveMenuId(activeMenuId === workSpace._id ? null : workSpace._id);
-                          }}
-                          className="p-1.5 hover:bg-zinc-200 rounded-lg text-zinc-400 cursor-pointer"
-                        >
-                          <MoreVertical size={14} />
-                        </button>
-
-                        {activeMenuId === workSpace._id && (
-                          <div
-                            onMouseLeave={() => setActiveMenuId(null)}
-                            /* 3. Added a stopPropagation here so clicking inside the menu doesn't trigger the Link */
-                            onClick={(e) => e.stopPropagation()}
-                            className="absolute right-0 mt-1 w-60 -top-5 bg-white border border-zinc-100 shadow-2xl rounded-2xl p-1.5 z-50"
-                          >
-                            {isOwner ? (
-                              /* 4. Use a div instead of a Fragment if the linter is still complaining, 
-                                 but keying the specific buttons usually solves it */
-                              <div className="flex flex-col gap-0.5">
-                                <button key="opt-invite" onClick={() => { console.log("workspace => ", workSpace); setModalMode('invite'); setSelectedWorkspace(workSpace); setActiveMenuId(null); }} className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-zinc-600 hover:bg-zinc-50 rounded-xl transition-all cursor-pointer">
-                                  <UserPlus size={14} /> Invite Members
-                                </button>
-                                <button key="opt-rename" onClick={() => { setModalMode('rename'); setSelectedWorkspace(workSpace); setActiveMenuId(null); }} className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-zinc-600 hover:bg-zinc-50 rounded-xl transition-all cursor-pointer">
-                                  <Edit2 size={14} /> Rename
-                                </button>
-                                <div className="h-[1px] bg-zinc-100 my-1" />
-                                <button key="opt-delete" onClick={() => { setModalMode('delete'); setSelectedWorkspace(workSpace); setActiveMenuId(null); }} className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-rose-500 hover:bg-rose-50 rounded-xl transition-all cursor-pointer">
-                                  <Trash2 size={14} /> Delete Workspace
-                                </button>
-                              </div>
-                            ) : (
-                              <button key="opt-leave" onClick={() => { handleLeaveWorkspace(workSpace._id); setActiveMenuId(null); }} className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-rose-500 hover:bg-rose-50 rounded-xl transition-all cursor-pointer">
-                                <LeaveIcon size={14} /> Leave Workspace
-                              </button>
-                            )}
-                          </div>
-                        )}
-                      </div>
                     </div>
                   );
                 })}
                 <button
-                  key="btn-create-new" // 5. Don't forget the static items in the list!
                   onClick={() => setModalMode('create')}
                   className="cursor-pointer w-full flex items-center gap-3 px-4 py-3 text-zinc-400 hover:text-indigo-600 transition-all rounded-2xl hover:bg-indigo-50/50 border border-dashed border-transparent hover:border-indigo-200 mt-2 group"
                 >
@@ -501,11 +422,10 @@ export default function Sidebar () {
           <div className="flex items-center justify-between px-2 bg-zinc-100/50 p-4 rounded-[24px] border border-zinc-200/30">
             <div className="flex items-center gap-3 overflow-hidden">
               <div className="w-9 h-9 shrink-0 rounded-full bg-indigo-100 border-2 border-white shadow-sm flex items-center justify-center text-[10px] font-black text-indigo-600">
-                AR
+                {user?.fullName?.charAt(0) || 'U'}
               </div>
               <div className="flex-1 overflow-hidden">
                 <p className="text-sm font-black text-zinc-900 truncate">{user?.fullName}</p>
-                {/* <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-tighter">Pro Plan</p> */}
               </div>
             </div>
             <button onClick={handleLogout} className="p-2 text-zinc-400 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all cursor-pointer group">

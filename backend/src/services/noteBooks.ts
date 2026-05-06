@@ -12,12 +12,18 @@ import { WorkSpace } from "../schema/workspace"
 const getNoteBookDetails = async (id: string) => {
   try {
     const notebook = await NoteBook.findOne({ _id: new Types.ObjectId(id) })
-      .populate({
+      .populate([{
         path: 'notes',
         model: Note,
         select: 'title jsonBody createdAt updatedAt',
         options: { sort: { createdAt: -1 } }
-      })
+      },
+    {
+      path: 'workSpaceId',
+      model: WorkSpace, // Ensure this matches your WorkSpace model name
+      select: 'name ownerId' // Choose the fields you want to return
+    }
+    ])
       .lean();
     return notebook;
   } catch (error) {

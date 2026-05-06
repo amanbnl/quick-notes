@@ -32,7 +32,20 @@ export default function AuthPage () {
   } = useForm<AuthFormData>({
     resolver: zodResolver(authSchema),
   });
+  const fetchUserDetails = async (id: string) => {
+    const userDetailsResp = await api.get(`/users/${id}`);
+    const userDetails = userDetailsResp.data;
 
+    if (userDetails) {
+      setUser({
+        id: userDetails._id,
+        fullName: userDetails.fullName,
+        email: userDetails.email,
+        age: userDetails.age,
+        bio: userDetails.bio,
+      });
+    }
+  }
   const onSubmit = async (formData: AuthFormData) => {
     setIsLoading(true);
     try {
@@ -46,9 +59,7 @@ export default function AuthPage () {
           // Handle Persistence
           localStorage.setItem('auth_token', data.token);
           setCookie('auth_token', data.token);
-          setUser({
-            id: data.id
-          } as UserDetails);
+          await fetchUserDetails(data.id)
 
           router.push('/note-books');
         }

@@ -12,28 +12,74 @@ import { ICreateWorkSpace, IShareWorkSpace, IUpdateWorkSpace } from "../interfac
 
 const getWorkSpaceDetails = async (id: string) => {
   try {
-    return await WorkSpace.findOne({ _id: new Types.ObjectId(id) }).populate([{
-      path: 'ownerId',
-      model: User,
-      select: '_id fullName'
-    },
-    {
-      path: 'users',
-      model: User,
-      select: '_id fullName email'
-    }]).lean()
+    const result = await WorkSpace.aggregate([
+      // 1. Find the specific Workspace
+      { $match: { _id: new Types.ObjectId(id) } },
 
+      // 2. "Join" the owner details
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'ownerId',
+          foreignField: '_id',
+          as: 'ownerId'
+        }
+      },
+      { $unwind: '$ownerId' }, // Convert array to object
+
+      // 3. "Join" the users details
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'users',
+          foreignField: '_id',
+          as: 'users'
+        }
+      },
+
+      // 4. THE PROJECT STAGE (Filtering + Field Selection)
+      {
+        $project: {
+          name: 1, // include workspace name
+          memberCount: 1,
+          ownerId: { _id: 1, fullName: 1 }, // Select specific owner fields
+          users: {
+            $filter: {
+              input: '$users',
+              as: 'u',
+              // The logic: Keep user if their _id is NOT equal to ownerId
+              cond: { $ne: ['$$u._id', '$ownerId._id'] }
+            }
+          }
+        }
+      },
+
+      // 5. Final projection to clean up user fields
+      {
+        $project: {
+          name: 1,
+          memberCount: 1,
+          ownerId: 1,
+          "users._id": 1,
+          "users.fullName": 1,
+          "users.email": 1
+        }
+      }
+    ]);
+
+    return result[0] || null;
   } catch (error) {
-    return handleError(error)
+    return handleError(error);
   }
-}
+};
 
 const getWorkSpaceList = async (userId: string) => {
   try {
+    console.log("user id =->", userId)
     const query = {
       $or: [
         { ownerId: new Types.ObjectId(userId) },
-        { users: new Types.ObjectId(userId) }
+        { users: userId }
       ]
     };
 
